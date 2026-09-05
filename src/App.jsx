@@ -117,7 +117,7 @@ int main() {
       {/* Header */}
       <header className="header">
         <div className="header-left">
-          <h1>Compiler</h1>
+          <h1 color="white">Compiler</h1>
           <div className={`status-pill ${status}`}>
             <span className="status-dot"></span>
             {statusLabels[status]}
