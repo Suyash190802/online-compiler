@@ -34,34 +34,57 @@ console.log(2 ** 10);`);
     error: "Error"
   };
 
-  const handleRun = () => {
-    setStatus("running");
-    setOutput("");
+const handleRun = async () => {
+  if (!code.trim()) {
+    setOutput("No code to execute.");
+    setStatus("error");
+    return;
+  }
 
-    setTimeout(() => {
-      try {
-        if (language === "javascript") {
-          const logs = [];
-          const fakeConsole = {
-            log: (...args) => logs.push(args.join(" ")),
-            error: (...args) => logs.push(args.join(" "))
-          };
-          // eslint-disable-next-line no-new-func
-          const fn = new Function("console", code);
-          fn(fakeConsole);
-          setOutput(logs.length ? logs.join("\n") : "(no output)");
-          setStatus("success");
-        } else {
-          setOutput("Program executed successfully!\n\nHello World");
-          setStatus("success");
-        }
-      } catch (err) {
-        setOutput(err.message);
-        setStatus("error");
-      }
-    }, 500);
-  };
+  setStatus("running");
+  setOutput("");
 
+  try {
+    const response = await fetch("http://localhost:5000/api/execute", {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        language,
+        code,
+        input
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setOutput(data.error || "Something went wrong.");
+      setStatus("error");
+      return;
+    }
+
+    setOutput(data.output || "(no output)");
+
+    setStatus(
+      data.status === "success"
+        ? "success"
+        : "error"
+    );
+
+  } catch (error) {
+    console.error(error);
+
+    setOutput(
+      "Unable to connect to the compiler server."
+    );
+
+    setStatus("error");
+  }
+};
   const handleLanguageChange = (e) => {
     const selectedLanguage = e.target.value;
     setLanguage(selectedLanguage);
@@ -117,7 +140,7 @@ int main() {
       {/* Header */}
       <header className="header">
         <div className="header-left">
-          <h1 color="white">Compiler</h1>
+          <h1>Compiler</h1>
           <div className={`status-pill ${status}`}>
             <span className="status-dot"></span>
             {statusLabels[status]}
@@ -125,7 +148,7 @@ int main() {
         </div>
 
         <div className="header-controls">
-          <span className="shortcut-hint">⌘ + Enter</span>
+          <span className="shortcut-hint">Ctrl+Enter</span>
 
           <select value={language} onChange={handleLanguageChange}>
             {languages.map((lang) => (
@@ -182,7 +205,7 @@ int main() {
             <div className="section-title">Output</div>
 
             <pre>
-              {output || "Press Run, or ⌘/Ctrl + Enter, to execute."}
+              {output || "Press Run, or Ctrl + Enter, to execute."}
             </pre>
 
             <div className="footer-bar">
